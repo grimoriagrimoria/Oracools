@@ -1,5 +1,7 @@
 # Oracools
 
+A phygital sculptural collection by Julio Sahagún Sánchez and Tessa Fansa Vega
+
 Edición phygital de los **Oráculos telúrico-sintéticos**: esculturas impresas en 3D con un
 ESP32-C3 y una pantallita OLED de 0.42" (72×40) adentro, que se despiertan y conversan
 desde el celular por Bluetooth.
@@ -59,3 +61,7 @@ así la app muestra exactamente lo mismo.
 python -m mpremote connect COM3 run herramientas/prueba_firmware.py
 python herramientas/prueba_ble.py
 ```
+
+## Licencia
+
+CC0 1.0 Universal (ver `LICENSE`).
