@@ -1,0 +1,12 @@
+# cools.oraculos.app — Web Bluetooth sólo funciona con HTTPS
+RewriteEngine On
+RewriteCond %{HTTPS} off
+RewriteCond %{REQUEST_URI} !^/\.well-known/
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+AddType application/manifest+json .webmanifest
+
+# el service worker y la página siempre se revisan, para que los cambios lleguen
+<FilesMatch "^(sw\.js|index\.html)$">
+  Header set Cache-Control "no-cache"
+</FilesMatch>
