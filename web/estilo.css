@@ -53,7 +53,7 @@ body {
 
 ::selection { background: rgba(227, 176, 99, .3); color: #fff; }
 
-header, main, footer { max-width: 520px; margin: 0 auto; }
+header, main, footer { max-width: 520px; margin: 0 auto; position: relative; z-index: 1; }
 
 /* ---------- encabezado ---------- */
 header { padding: 30px 0 10px; text-align: center; }
@@ -75,7 +75,7 @@ h1 img {
 .lema span { color: var(--text-faint); letter-spacing: .2em; }
 
 /* ---------- secciones ---------- */
-section {
+section, .panel {
   position: relative;
   background: var(--panel);
   border: 1px solid var(--line);
@@ -85,7 +85,7 @@ section {
   backdrop-filter: blur(6px);
   overflow: hidden;
 }
-section::before {
+section::before, .panel::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -111,6 +111,7 @@ h2::after { content: ""; flex: 1; height: 1px; background: var(--line-soft); }
 .altar { text-align: center; padding-top: 20px; }
 
 .marco {
+  position: relative;
   background: var(--oled);
   border-radius: 12px;
   padding: 14px;
@@ -200,7 +201,7 @@ button.principal:hover { color: #1a1206; background: linear-gradient(180deg, #fb
 .fila button { flex: 1; }
 
 .nota { color: var(--text-faint); font-size: 13px; margin: 10px 0 0; }
-section > .nota:first-of-type { margin: 0 0 12px; }
+.contenido > .nota:first-of-type { margin: 0 0 12px; }
 
 .ajuste { display: flex; align-items: center; gap: 12px; margin: 8px 0; color: var(--text-dim); font-size: 14px; }
 .ajuste input[type="range"] { flex: 1; accent-color: var(--gold); }
@@ -248,11 +249,92 @@ footer {
   color: var(--text-faint);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  * { transition: none !important; }
-}
 
 /* pistas que sólo se ven mientras el Oracool duerme */
 .pista { margin: 0 0 12px; }
 body.enlazado .pista { display: none; }
 input:disabled { opacity: .4; cursor: not-allowed; }
+
+/* ---------- paneles que se colapsan ---------- */
+.panel { padding: 0; }
+.panel > summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 16px 16px 14px;
+  border-radius: var(--radius);
+  user-select: none;
+}
+.panel > summary::-webkit-details-marker { display: none; }
+.panel > summary h2 { margin: 0; }
+.panel > summary h2::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform .25s var(--ease);
+  margin-right: 2px;
+}
+.panel[open] > summary h2::before { transform: rotate(45deg); }
+.panel > summary:hover h2 { color: var(--gold); }
+.panel > summary:focus-visible { outline: none; box-shadow: inset 0 0 0 1px var(--gold-dim); }
+.panel .contenido { padding: 0 16px 18px; }
+.panel[open] .contenido { animation: desplegar .35s var(--ease); }
+@keyframes desplegar { from { opacity: 0; transform: translateY(-6px); } }
+
+/* ---------- la pantalla se abre cuando despierta ---------- */
+.ventana {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows .9s var(--ease), opacity .6s .3s;
+}
+.ventana > div { overflow: hidden; min-height: 0; }
+.marco.cerrado .ventana { grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows .6s var(--ease), opacity .3s; }
+
+.espera {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 72 / 14;
+  image-rendering: pixelated;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height .5s var(--ease), opacity .4s;
+}
+.marco.cerrado .espera { max-height: 120px; opacity: 1; }
+.marco.cerrado { padding: 18px 14px; }
+.marco.buscando { box-shadow: 0 0 0 4px rgba(181, 236, 154, .08), 0 0 40px -4px rgba(181, 236, 154, .35), inset 0 0 24px rgba(0, 0, 0, .9); border-color: #7fae6c; }
+
+/* ---------- el gran botón del azar ---------- */
+.rejilla .aleatorio {
+  grid-column: 1 / -1;
+  min-height: 54px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: .28em;
+  text-transform: uppercase;
+  color: var(--gold);
+  border-color: var(--gold-dim);
+  background:
+    linear-gradient(90deg, transparent, rgba(227, 176, 99, .12), transparent) 0 0 / 200% 100%,
+    rgba(8, 10, 18, .6);
+  animation: brillo-azar 4s linear infinite;
+}
+.rejilla .aleatorio:disabled { animation: none; }
+@keyframes brillo-azar { to { background-position: -200% 0, 0 0; } }
+
+/* ---------- polvo de estrellas pixelado ---------- */
+#polvo {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  image-rendering: pixelated;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before { transition: none !important; animation: none !important; }
+}

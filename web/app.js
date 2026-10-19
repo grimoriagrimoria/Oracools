@@ -10,6 +10,8 @@ const W = 72, H = 40, TAM = W * H / 8;   // 360 bytes, formato MONO_VLSB
 const BLOQUE = 18;                        // píxeles por bloque BLE (+2 de posición)
 const ESCALA = 6;                         // 72x40 -> 432x240 en el canvas
 
+import { polvo, espera } from './efectos.js';
+
 const $ = (s) => document.querySelector(s);
 const pantalla = $('#pantalla');
 const ctx = pantalla.getContext('2d');
@@ -49,7 +51,7 @@ const RELATOS = {
   sol: 'El Oracool irradia.',
   tercer: 'El Oracool abrió el tercer ojo.',
   dormido: 'El Oracool volvió al sueño de la tierra.',
-  reposo: 'El Oracool sueña: sus glifos desfilan.',
+  reposo: 'El Oracool se entrega al azar: sus glifos desfilan.',
   cuernos: 'El Oracool muestra su silueta de dos puntas.',
   rombo: 'El Oracool guarda el rombo de la Á.',
   circuito: 'Chispas recorren los circuitos del Oracool.',
@@ -58,7 +60,7 @@ const RELATOS = {
   cielo: 'El Oracool mira las estrellas.',
   gota: 'Algo escurre del Oracool.',
   ojos: 'El Oracool te mira con dos ojos.',
-  nariz: 'El Oracool respira.',
+  trisquel: 'Tres espirales giran en el Oracool.',
   orbe: 'El orbe del Oracool late.',
   runa: 'El Oracool traza su runa.',
   onda: 'Ondas salen del centro del Oracool.',
@@ -155,6 +157,8 @@ async function enlazar() {
   await mandar('HOLA');
 }
 
+const latido = espera($('#espera'));
+
 async function despertar() {
   if (dispositivo?.gatt.connected) {
     await mandar('CARA:dormido');
@@ -162,6 +166,8 @@ async function despertar() {
     return;
   }
   try {
+    $('#marco').classList.add('buscando');
+    latido.buscar(true);
     if (!dispositivo) {
       anotar('Llamando a los Oracools cercanos…');
       dispositivo = await navigator.bluetooth.requestDevice({
@@ -177,11 +183,16 @@ async function despertar() {
       anotar('Nadie respondió, o cerraste la ventana. ¿Está encendido el Oracool?');
     }
     else { estado('No se pudo despertar.'); anotar(e.message); }
+  } finally {
+    $('#marco').classList.remove('buscando');
+    latido.buscar(false);
   }
 }
 
 function enlazado(si) {
   document.body.classList.toggle('enlazado', si);
+  $('#marco').classList.toggle('cerrado', !si);
+  if (si) latido.apagar(); else { latido.encender(); salirDeDibujo(); }
   document.querySelectorAll('.requiere').forEach((el) => { el.disabled = !si; });
 }
 
@@ -301,6 +312,14 @@ if (!('bluetooth' in navigator)) {
 }
 $('#despertar').addEventListener('click', despertar);
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', pintar);
+// los paneles recuerdan si los dejaste abiertos o cerrados
+document.querySelectorAll('details.panel').forEach((d) => {
+  const clave = 'oracools:panel:' + d.dataset.panel;
+  try { const v = localStorage.getItem(clave); if (v !== null) d.open = v === '1'; } catch {}
+  d.addEventListener('toggle', () => { try { localStorage.setItem(clave, d.open ? '1' : '0'); } catch {} });
+});
+
+polvo($('#polvo'));
 enlazado(false);
 pintar();
 anotar('La app está lista. Toca «Despertar al Oracool» para empezar.');

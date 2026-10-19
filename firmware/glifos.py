@@ -260,16 +260,24 @@ def dos_ojos(fb, t):
         fb.pixel(ex + mirada - 1, CY - 1, 0)
 
 
-def nariz(fb, t):
-    """La nariz del Oráculo de la izquierda, que respira."""
-    aire = int(1.5 + 1.5 * sin(t / 600))
-    fb.line(CX - 4, 3, CX - 6, 24, 1)
-    fb.line(CX + 4, 3, CX + 6, 24, 1)
-    fb.ellipse(CX - 8, 29, 5 + aire, 5, 1, False, 2 | 4 | 8)
-    fb.ellipse(CX + 8, 29, 5 + aire, 5, 1, False, 1 | 4 | 8)
-    fb.ellipse(CX, 30, 4, 4, 1, False, 1 | 2)
-    fb.ellipse(CX - 8, 31, 2 + aire // 2, 1, 1, True)
-    fb.ellipse(CX + 8, 31, 2 + aire // 2, 1, 1, True)
+def trisquel(fb, t):
+    """Tres espirales que nacen del centro y giran: el trisquel."""
+    giro = t / 1600
+    for k in range(3):
+        a0 = giro + k * 2 * pi / 3
+        cx = CX + 9 * cos(a0)
+        cy = CY + 8.5 * sin(a0)
+        x0, y0 = CX, CY
+        s_ = 0.0
+        while s_ <= 1.0:
+            r = 9.5 * (1 - s_)
+            th = a0 + pi + s_ * 3 * pi
+            x1 = int(cx + r * cos(th))
+            y1 = int(cy + 0.95 * r * sin(th))
+            fb.line(x0, y0, x1, y1, 1)
+            x0, y0 = x1, y1
+            s_ += 0.06
+    fb.ellipse(CX, CY, 1, 1, 1, True)
 
 
 def orbe(fb, t):
@@ -321,7 +329,7 @@ GLIFOS = {
     "cielo": cielo,
     "gota": gota,
     "ojos": dos_ojos,
-    "nariz": nariz,
+    "trisquel": trisquel,
     "orbe": orbe,
     "runa": runa,
     "onda": onda,

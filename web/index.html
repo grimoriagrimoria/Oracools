@@ -13,6 +13,7 @@
   <script type="module" src="app.js"></script>
 </head>
 <body>
+  <canvas id="polvo" aria-hidden="true"></canvas>
   <header>
     <h1><img src="marca/oraculos-logotipo.png" alt="Oráculos" width="2376" height="687"></h1>
     <p class="lema">Cools <span>· telúrico-sintéticos</span></p>
@@ -20,10 +21,13 @@
 
   <main>
     <section class="altar">
-      <div class="marco">
-        <canvas id="pantalla" width="432" height="240" aria-label="Pantalla del Oracool"></canvas>
+      <div class="marco cerrado" id="marco">
+        <canvas id="espera" class="espera" width="72" height="14" aria-hidden="true"></canvas>
+        <div class="ventana">
+          <div><canvas id="pantalla" width="432" height="240" aria-label="Pantalla del Oracool"></canvas></div>
+        </div>
       </div>
-      <p id="estado" class="estado">Dormido. Nadie lo ha despertado.</p>
+      <p id="estado" class="estado">El Oracool duerme. Nadie lo ha despertado.</p>
       <button id="despertar" class="principal">Despertar al Oracool</button>
       <p id="sin-bluetooth" class="aviso" hidden>
         Este navegador no habla Bluetooth. Abre esta página en Chrome (Android o computadora).
@@ -31,67 +35,79 @@
       </p>
     </section>
 
-    <section>
-      <h2>Glifos</h2>
-      <p class="nota pista">Despierta al Oracool para usar estos controles.</p>
-      <div class="rejilla" id="rostros">
-        <button class="requiere" data-cara="reposo">✦ Reposo</button>
-        <button class="requiere" data-cara="ojo">Ojo</button>
-        <button class="requiere" data-cara="ojos">Dos ojos</button>
-        <button class="requiere" data-cara="tercer">Tercer ojo</button>
-        <button class="requiere" data-cara="boca">Boca</button>
-        <button class="requiere" data-cara="habla">Habla</button>
-        <button class="requiere" data-cara="nariz">Nariz</button>
-        <button class="requiere" data-cara="rostro">Rostro</button>
-        <button class="requiere" data-cara="cuernos">Cuernos</button>
-        <button class="requiere" data-cara="sol">Sol</button>
-        <button class="requiere" data-cara="luna">Luna</button>
-        <button class="requiere" data-cara="cielo">Cielo</button>
-        <button class="requiere" data-cara="orbe">Orbe</button>
-        <button class="requiere" data-cara="runa">Runa</button>
-        <button class="requiere" data-cara="rombo">Rombo</button>
-        <button class="requiere" data-cara="circuito">Circuito</button>
-        <button class="requiere" data-cara="espiral">Espiral</button>
-        <button class="requiere" data-cara="gota">Gota</button>
-        <button class="requiere" data-cara="onda">Onda</button>
-        <button class="requiere" data-cara="dormido">Dormido</button>
+    <details class="panel" data-panel="glifos" open>
+      <summary><h2>Glifos</h2></summary>
+      <div class="contenido">
+        <p class="nota pista">Despierta al Oracool para usar estos controles.</p>
+        <div class="rejilla" id="rostros">
+          <button class="requiere aleatorio" data-cara="reposo">✦ Aleatorio ✦</button>
+          <button class="requiere" data-cara="ojo">Ojo</button>
+          <button class="requiere" data-cara="ojos">Dos ojos</button>
+          <button class="requiere" data-cara="tercer">Tercer ojo</button>
+          <button class="requiere" data-cara="boca">Boca</button>
+          <button class="requiere" data-cara="habla">Habla</button>
+          <button class="requiere" data-cara="rostro">Rostro</button>
+          <button class="requiere" data-cara="cuernos">Cuernos</button>
+          <button class="requiere" data-cara="trisquel">Trisquel</button>
+          <button class="requiere" data-cara="sol">Sol</button>
+          <button class="requiere" data-cara="luna">Luna</button>
+          <button class="requiere" data-cara="cielo">Cielo</button>
+          <button class="requiere" data-cara="orbe">Orbe</button>
+          <button class="requiere" data-cara="runa">Runa</button>
+          <button class="requiere" data-cara="rombo">Rombo</button>
+          <button class="requiere" data-cara="circuito">Circuito</button>
+          <button class="requiere" data-cara="espiral">Espiral</button>
+          <button class="requiere" data-cara="gota">Gota</button>
+          <button class="requiere" data-cara="onda">Onda</button>
+          <button class="requiere" data-cara="dormido">Dormido</button>
+        </div>
       </div>
-    </section>
+    </details>
 
-    <section>
-      <h2>Palabras</h2>
-      <form id="palabras" class="palabras">
-        <textarea id="texto" rows="2" maxlength="180" placeholder="¿De dónde venimos?"></textarea>
-        <button class="requiere" type="submit">Susurrar</button>
-      </form>
-      <p class="nota">Caben 9 letras por renglón y 5 renglones; si es más largo, el texto se desplaza.</p>
-    </section>
-
-    <section>
-      <h2>Lienzo</h2>
-      <p class="nota">Dibuja píxel por píxel directo en la pantalla de arriba.</p>
-      <div class="fila">
-        <button id="dibujar" aria-pressed="false">Dibujar</button>
-        <button id="borrar">Borrar</button>
-        <button id="invertir-lienzo">Invertir</button>
+    <details class="panel" data-panel="palabras" open>
+      <summary><h2>Palabras</h2></summary>
+      <div class="contenido">
+        <p class="nota pista">Despierta al Oracool para usar estos controles.</p>
+        <form id="palabras" class="palabras">
+          <textarea id="texto" rows="2" maxlength="180" placeholder="¿De dónde venimos?"></textarea>
+          <button class="requiere" type="submit">Susurrar</button>
+        </form>
+        <p class="nota">Caben 9 letras por renglón y 5 renglones; si es más largo, el texto se desplaza.</p>
       </div>
-    </section>
+    </details>
 
-    <section>
-      <h2>Ajustes</h2>
-      <p class="nota pista">Despierta al Oracool para usar estos controles.</p>
-      <label class="ajuste">Brillo
-        <input class="requiere" id="brillo" type="range" min="1" max="255" value="207">
-      </label>
-      <label class="ajuste interruptor">
-        <input class="requiere" id="invertir" type="checkbox"> Pantalla invertida
-      </label>
-    </section>
+    <details class="panel" data-panel="lienzo" open>
+      <summary><h2>Lienzo</h2></summary>
+      <div class="contenido">
+        <p class="nota pista">Despierta al Oracool para usar estos controles.</p>
+        <p class="nota">Dibuja píxel por píxel directo en la pantalla de arriba.</p>
+        <div class="fila">
+          <button class="requiere" id="dibujar" aria-pressed="false">Dibujar</button>
+          <button class="requiere" id="borrar">Borrar</button>
+          <button class="requiere" id="invertir-lienzo">Invertir</button>
+        </div>
+      </div>
+    </details>
 
-    <section>
-      <h2>Bitácora</h2>
-      <ol id="bitacora" class="bitacora"></ol>
-    </section>
+    <details class="panel" data-panel="ajustes" open>
+      <summary><h2>Ajustes</h2></summary>
+      <div class="contenido">
+        <p class="nota pista">Despierta al Oracool para usar estos controles.</p>
+        <label class="ajuste">Brillo
+          <input class="requiere" id="brillo" type="range" min="1" max="255" value="207">
+        </label>
+        <label class="ajuste interruptor">
+          <input class="requiere" id="invertir" type="checkbox"> Pantalla invertida
+        </label>
+      </div>
+    </details>
+
+    <details class="panel" data-panel="bitacora" open>
+      <summary><h2>Bitácora</h2></summary>
+      <div class="contenido">
+        <ol id="bitacora" class="bitacora"></ol>
+      </div>
+    </details>
   </main>
 
   <footer>Julio Sahagún Sánchez · tecnomancia telúrica</footer>
