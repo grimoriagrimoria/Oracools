@@ -55,6 +55,16 @@ Comandos: `HOLA`, `CARA:<glifo>` (ojo, ojos, tercer, boca, habla, nariz, rostro,
 Cada vez que cambia lo que se ve, el Oracool manda su pantalla por LIENZO (el "espejo"),
 así la app muestra exactamente lo mismo.
 
+## Publicar
+
+```bash
+bash herramientas/publicar.sh oracools   # https://oraculos.app/oracools/
+bash herramientas/publicar.sh            # https://cools.oraculos.app
+```
+
+Cada vez que cambies estilo.css, app.js o efectos.js, sube el `?v=` en index.html,
+app.js y sw.js (y la VERSION de sw.js) para que ningún navegador se quede con lo viejo.
+
 ## Pruebas
 
 ```bash

@@ -9,8 +9,8 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="iconos/icono-192.png">
   <link rel="apple-touch-icon" href="iconos/apple-touch-icon.png">
-  <link rel="stylesheet" href="estilo.css">
-  <script type="module" src="app.js"></script>
+  <link rel="stylesheet" href="estilo.css?v=6">
+  <script type="module" src="app.js?v=6"></script>
 </head>
 <body>
   <canvas id="polvo" aria-hidden="true"></canvas>
@@ -34,6 +34,47 @@
         En iPhone puedes usar la app Bluefy.
       </p>
     </section>
+
+    <details class="panel" data-panel="anima" open>
+      <summary><h2>Ánima</h2></summary>
+      <div class="contenido">
+        <p class="nota pista">Despierta al Oracool para saber cómo se siente.</p>
+        <div class="anima">
+          <p class="animo"><span id="animo-nombre">—</span></p>
+          <p class="nota" id="animo-frase">El Oracool guarda su ánima en su propia memoria.</p>
+          <div class="necesidad tierra">
+            <span class="etiqueta">Tierra</span>
+            <div class="barra" id="barra-tierra" role="meter" aria-label="Tierra" aria-valuemin="0" aria-valuemax="100"></div>
+            <span class="valor" id="valor-tierra">–</span>
+          </div>
+          <div class="necesidad chispa">
+            <span class="etiqueta">Chispa</span>
+            <div class="barra" id="barra-chispa" role="meter" aria-label="Chispa" aria-valuemin="0" aria-valuemax="100"></div>
+            <span class="valor" id="valor-chispa">–</span>
+          </div>
+          <p class="edad" id="edad"></p>
+        </div>
+        <div class="ofrendas">
+          <div>
+            <h3>Ofrendas telúricas</h3>
+            <div class="fila">
+              <button class="requiere" data-ofrenda="barro">Barro</button>
+              <button class="requiere" data-ofrenda="agua">Agua</button>
+              <button class="requiere" data-ofrenda="luna">Luna</button>
+            </div>
+          </div>
+          <div>
+            <h3>Ofrendas sintéticas</h3>
+            <div class="fila">
+              <button class="requiere" data-ofrenda="chispa">Chispa</button>
+              <button class="requiere" data-ofrenda="codigo">Código</button>
+              <button class="requiere" data-ofrenda="eco">Eco</button>
+            </div>
+          </div>
+        </div>
+        <p class="nota">Tócalo (botón BOOT) para darle tierra; sostenlo para abrazarlo. Tus palabras y dibujos le dan chispa. El chiste es el equilibrio.</p>
+      </div>
+    </details>
 
     <details class="panel" data-panel="glifos" open>
       <summary><h2>Glifos</h2></summary>

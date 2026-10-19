@@ -315,6 +315,18 @@ def onda(fb, t):
     fb.ellipse(CX, CY, 2, 2, 1, True)
 
 
+def piedra(fb, t):
+    """Petrificado: el Oracool vuelve a ser piedra. Quieto, con grietas; casi no respira."""
+    fb.ellipse(CX, CY + 3, 22, 14, 1)
+    fb.ellipse(CX - 6, CY - 6, 12, 8, 1, False, 1 | 2)
+    for a, b in (((CX - 4, CY - 9), (CX, CY - 2)), ((CX, CY - 2), (CX - 3, CY + 4)),
+                 ((CX, CY - 2), (CX + 7, CY + 1)), ((CX + 7, CY + 1), (CX + 10, CY + 7)),
+                 ((CX - 3, CY + 4), (CX - 9, CY + 9))):
+        fb.line(a[0], a[1], b[0], b[1], 1)
+    if (t // 2500) % 6 == 0:  # muy de vez en cuando se escapa una motita de polvo
+        fb.pixel(CX + 14, CY - 8 - (t // 300) % 6, 1)
+
+
 GLIFOS = {
     "ojo": ojo,
     "boca": boca,
@@ -334,7 +346,18 @@ GLIFOS = {
     "runa": runa,
     "onda": onda,
     "dormido": dormido,
+    "piedra": piedra,
 }
 
 # los que desfilan cuando el Oracool está en reposo
-REPOSO = [n for n in GLIFOS if n != "dormido"]
+REPOSO = [n for n in GLIFOS if n not in ("dormido", "piedra")]
+
+# según cómo se siente, en reposo muestra unos glifos u otros (ver animo.py)
+POR_ANIMO = {
+    "R": ["sol", "onda", "trisquel", "cielo", "espiral", "rombo", "orbe", "runa", "tercer", "ojo"],
+    "S": REPOSO,
+    "T": ["cuernos", "gota", "luna", "boca", "rostro", "ojos", "cielo", "trisquel"],
+    "C": ["circuito", "espiral", "rombo", "orbe", "runa", "tercer", "onda", "sol"],
+    "H": ["ojos", "ojo", "gota", "luna", "dormido"],
+    "P": ["piedra"],
+}

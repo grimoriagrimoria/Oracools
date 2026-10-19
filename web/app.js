@@ -10,7 +10,7 @@ const W = 72, H = 40, TAM = W * H / 8;   // 360 bytes, formato MONO_VLSB
 const BLOQUE = 18;                        // píxeles por bloque BLE (+2 de posición)
 const ESCALA = 6;                         // 72x40 -> 432x240 en el canvas
 
-import { polvo, espera } from './efectos.js';
+import { polvo, espera } from './efectos.js?v=6';
 
 const $ = (s) => document.querySelector(s);
 const pantalla = $('#pantalla');
@@ -111,6 +111,57 @@ function mandarLienzo() {
   }).catch((e) => anotar('No se pudo mandar el dibujo: ' + e.message));
 }
 
+// ---------- ánima ---------------------------------------------------------
+
+const ANIMOS = {
+  R: ['Radiante', 'Brilla entre la tierra y la máquina.'],
+  S: ['Sereno', 'En equilibrio. Respira tranquilo.'],
+  T: ['Terroso', 'Mucha tierra y poca chispa: háblale, dibújale.'],
+  C: ['Chispeante', 'Mucha chispa y poca tierra: tócalo, abrázalo.'],
+  H: ['Hambriento', 'Le falta algo y te lo está pidiendo.'],
+  P: ['Petrificado', 'Volvió a ser piedra. Abrázalo para despertarlo.'],
+};
+const OFRENDAS = {
+  barro: 'Le ofreciste barro.', agua: 'Le ofreciste agua.', luna: 'Le ofreciste luz de luna.',
+  chispa: 'Le ofreciste una chispa.', codigo: 'Le ofreciste código.', eco: 'Le ofreciste un eco.',
+  toque: 'Lo tocaste: sintió tu mano.', abrazo: 'Lo abrazaste.', palabras: 'Tus palabras le dieron chispa.',
+  dibujo: 'Tu dibujo le dio chispa.',
+};
+
+function armarBarra(el) {
+  el.replaceChildren(...Array.from({ length: 20 }, () => document.createElement('i')));
+}
+armarBarra($('#barra-tierra'));
+armarBarra($('#barra-chispa'));
+
+function ponerBarra(cual, v) {
+  const barra = $('#barra-' + cual);
+  barra.querySelectorAll('i').forEach((i, n) => i.classList.toggle('lleno', n < Math.round(v / 5)));
+  barra.classList.toggle('bajo', v < 20);
+  barra.setAttribute('aria-valuenow', v);
+  $('#valor-' + cual).textContent = v;
+}
+
+let animoAntes = null;
+function alSentir(valor) {
+  const [t, c, m] = valor.split(',');
+  ponerBarra('tierra', +t);
+  ponerBarra('chispa', +c);
+  const [nombre, frase] = ANIMOS[m] ?? ['—', ''];
+  $('#animo-nombre').textContent = nombre;
+  $('#animo-frase').textContent = m === 'H'
+    ? `Le falta ${+t < +c ? 'tierra' : 'chispa'} y te la está pidiendo.` : frase;
+  document.body.classList.toggle('petrificado', m === 'P');
+  if (animoAntes && animoAntes !== m) anotar(`El Oracool se siente ${nombre.toLowerCase()}.`);
+  animoAntes = m;
+}
+
+function alEnvejecer(valor) {
+  const [dias, ofrendas] = valor.split(',').map(Number);
+  const edad = dias === 0 ? 'nació hoy' : dias === 1 ? '1 día de vida' : `${dias} días de vida`;
+  $('#edad').textContent = `${edad} · ${ofrendas} ${ofrendas === 1 ? 'ofrenda' : 'ofrendas'}`;
+}
+
 function alOirVoz(e) {
   const msg = new TextDecoder().decode(e.target.value);
   const [clave, valor] = msg.split(/:(.*)/s);
@@ -119,8 +170,14 @@ function alOirVoz(e) {
   } else if (clave === 'ESTADO') {
     marcarCara(valor);
     if (RELATOS[valor]) anotar(RELATOS[valor]);
-  } else if (clave === 'TOQUE') {
-    anotar('El Oracool sintió un toque.');
+  } else if (clave === 'AN') {
+    alSentir(valor);
+  } else if (clave === 'ED') {
+    alEnvejecer(valor);
+  } else if (clave === 'OF') {
+    if (OFRENDAS[valor]) anotar(OFRENDAS[valor]);
+  } else if (clave === 'ANIMO' || clave === 'TOQUE' || clave === 'ABRAZO') {
+    // ANIMO llega junto con AN; TOQUE y ABRAZO llegan junto con OF
   } else if (clave === 'ERR') {
     anotar('El Oracool se confundió: ' + valor);
   } else {
@@ -154,6 +211,7 @@ async function enlazar() {
   $('#despertar').textContent = 'Dormir al Oracool';
   enlazado(true);
   anotar(`Despertaste a ${dispositivo.name}.`);
+  await mandar('HORA:' + Math.floor(Date.now() / 1000));
   await mandar('HOLA');
 }
 
@@ -233,6 +291,14 @@ $('#palabras').addEventListener('submit', (e) => {
   mandar('TXT:' + t.replace(/\s*\n\s*/g, '|'));
   anotar(`Le susurraste: “${t}”`);
 });
+
+document.querySelectorAll('[data-ofrenda]').forEach((b) => b.addEventListener('click', () => {
+  if (!chars) return;
+  mandar('OFRENDA:' + b.dataset.ofrenda);
+  b.classList.remove('ofrecida');
+  void b.offsetWidth;  // reinicia la animación
+  b.classList.add('ofrecida');
+}));
 
 let tBrillo;
 $('#brillo').addEventListener('input', (e) => {

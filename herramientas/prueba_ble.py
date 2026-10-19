@@ -46,7 +46,8 @@ async def main():
         lambda d, ad: (d.name or ad.local_name or "").startswith("Oracool"), timeout=15)
     assert d, "no encontré ningún Oracool"
     print("encontré", d.name, d.address)
-    async with BleakClient(d) as c:
+    # Windows guarda en caché el mapa de servicios; pedimos uno fresco
+    async with BleakClient(d, winrt=dict(use_cached_services=False)) as c:
         await c.start_notify(VOZ, al_oir)
         await c.start_notify(LIENZO, al_ver)
 
@@ -77,6 +78,21 @@ async def main():
         await mandar(c, "ESPEJO"); await asyncio.sleep(1.5)
         assert espejos > n and espejo == tablero, "el lienzo no volvió igualito"
         print("   el lienzo volvió idéntico")
+
+        print("-> HORA y ofrendas")
+        import time
+        await mandar(c, "HORA:%d" % time.time()); await asyncio.sleep(0.8)
+        an = [v for v in voces if v.startswith("AN:")]
+        assert an and any(v.startswith("ED:") for v in voces), "no reportó su ánima"
+        antes = int(an[-1][3:].split(",")[0])
+        await mandar(c, "OFRENDA:barro"); await asyncio.sleep(1.0)
+        assert "OF:barro" in voces, "no aceptó la ofrenda"
+        despues = int([v for v in voces if v.startswith("AN:")][-1][3:].split(",")[0])
+        print("   tierra:", antes, "->", despues)
+        assert despues == min(100, antes + 25)
+        await mandar(c, "OFRENDA:nada"); await asyncio.sleep(0.5)
+        assert "?OFRENDA" in voces
+        await asyncio.sleep(2.0)  # que termine la animación de la ofrenda
 
         print("-> NOEXISTE"); await mandar(c, "NOEXISTE"); await asyncio.sleep(0.5)
         assert any(v.startswith("?") for v in voces)

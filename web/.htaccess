@@ -6,7 +6,16 @@ RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
 AddType application/manifest+json .webmanifest
 
-# el service worker y la página siempre se revisan, para que los cambios lleguen
-<FilesMatch "^(sw\.js|index\.html)$">
+# La app es chiquita: que el navegador siempre pregunte si hay versión nueva
+# (con ETag sólo se vuelve a bajar lo que cambió). Anula la caché de un año que
+# hereda de WordPress y la caché del servidor LiteSpeed.
+<IfModule LiteSpeed>
+  CacheLookup off
+</IfModule>
+<IfModule mod_expires.c>
+  ExpiresActive Off
+</IfModule>
+<FilesMatch "\.(html|js|css|webmanifest)$">
+  Header unset Expires
   Header set Cache-Control "no-cache"
 </FilesMatch>

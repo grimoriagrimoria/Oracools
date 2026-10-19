@@ -338,3 +338,46 @@ input:disabled { opacity: .4; cursor: not-allowed; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before { transition: none !important; animation: none !important; }
 }
+
+/* ---------- ánima ---------- */
+.anima { margin-bottom: 16px; }
+.animo { margin: 0; }
+#animo-nombre {
+  font-family: var(--titulo);
+  font-weight: 600;
+  font-size: 22px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--gold-bright);
+  text-shadow: 0 0 18px var(--glow);
+}
+#animo-frase { margin: 4px 0 14px; }
+
+.necesidad { display: grid; grid-template-columns: 64px 1fr 32px; align-items: center; gap: 10px; margin: 8px 0; }
+.necesidad .etiqueta { font-family: var(--titulo); font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--text-dim); }
+.necesidad .valor { font-family: var(--titulo); font-size: 13px; text-align: right; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.barra { display: grid; grid-template-columns: repeat(20, 1fr); gap: 2px; height: 12px; }
+.barra i { background: rgba(255, 255, 255, .05); border-radius: 1px; transition: background .4s, box-shadow .4s; }
+.tierra .barra i.lleno { background: var(--terra); box-shadow: 0 0 6px rgba(201, 138, 94, .5); }
+.chispa .barra i.lleno { background: var(--pixel); box-shadow: 0 0 6px rgba(181, 236, 154, .45); }
+.barra.bajo i.lleno { animation: pedir 1.2s ease-in-out infinite; }
+@keyframes pedir { 50% { opacity: .35; } }
+
+.edad { margin: 10px 0 0; font-family: var(--titulo); font-size: 11.5px; letter-spacing: .1em; color: var(--text-faint); }
+
+.ofrendas { display: grid; gap: 12px; }
+.ofrendas h3 {
+  margin: 0 0 8px;
+  font-family: var(--titulo);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+[data-ofrenda="barro"], [data-ofrenda="agua"], [data-ofrenda="luna"] { border-color: rgba(201, 138, 94, .3); }
+[data-ofrenda="chispa"], [data-ofrenda="codigo"], [data-ofrenda="eco"] { border-color: rgba(181, 236, 154, .22); }
+button.ofrecida { animation: ofrecer .7s var(--ease); }
+@keyframes ofrecer { 30% { transform: scale(1.06); box-shadow: 0 0 22px -2px var(--glow); color: var(--gold-bright); } }
+
+body.petrificado #animo-nombre { color: var(--text-faint); text-shadow: none; }

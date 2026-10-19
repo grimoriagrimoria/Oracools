@@ -6,6 +6,7 @@
 #   ...0004  LIENZO   (escritura + notificación) pantalla cruda de 72x40,
 #            en bloques de 20 bytes: 2 bytes de posición (LE) + 18 bytes de píxeles.
 #            360 bytes = 20 bloques exactos.
+#   ...0005  ANIMA    (lectura)     "AN:tierra,chispa,ánimo" para leerlo sin suscribirse
 import bluetooth
 from micropython import const
 
@@ -21,6 +22,7 @@ SERVICIO = bluetooth.UUID("4f524143-4f4f-4c53-8000-000000000001")
 _ESCUCHA = (bluetooth.UUID("4f524143-4f4f-4c53-8000-000000000002"), _F_ESCRIBE)
 _VOZ = (bluetooth.UUID("4f524143-4f4f-4c53-8000-000000000003"), _F_NOTIFICA)
 _LIENZO = (bluetooth.UUID("4f524143-4f4f-4c53-8000-000000000004"), _F_ESCRIBE | _F_NOTIFICA)
+_ANIMA = (bluetooth.UUID("4f524143-4f4f-4c53-8000-000000000005"), bluetooth.FLAG_READ)
 
 BLOQUE = 18  # píxeles por bloque (20 bytes con la cabecera)
 
@@ -40,8 +42,8 @@ class Enlace:
         self._ble.active(True)
         self._ble.config(gap_name=nombre)
         self._ble.irq(self._irq)
-        ((self._h_escucha, self._h_voz, self._h_lienzo),) = self._ble.gatts_register_services(
-            ((SERVICIO, (_ESCUCHA, _VOZ, _LIENZO)),)
+        ((self._h_escucha, self._h_voz, self._h_lienzo, self._h_anima),) = self._ble.gatts_register_services(
+            ((SERVICIO, (_ESCUCHA, _VOZ, _LIENZO, _ANIMA)),)
         )
         # modo "append": si llegan varias escrituras seguidas no se pisan
         self._ble.gatts_set_buffer(self._h_escucha, 256, True)
@@ -86,6 +88,10 @@ class Enlace:
 
     def conectado(self):
         return self.conexion is not None
+
+    def poner_anima(self, texto):
+        """Deja el último reporte de ánima listo para quien lo quiera leer."""
+        self._ble.gatts_write(self._h_anima, texto.encode())
 
     def decir(self, texto):
         """Manda un evento corto (máx. 20 bytes) a la app."""

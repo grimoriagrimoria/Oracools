@@ -1,27 +1,42 @@
-# El cuerpo del Oracool: qué muestra, cómo responde a los comandos y al toque.
+# El cuerpo del Oracool: qué muestra, cómo responde a los comandos, al toque y a su ánima.
 #
 # Comandos (texto, uno por línea):
-#   HOLA              -> responde "SOY:<nombre>" y su estado
+#   HOLA              -> responde "SOY:<nombre>", su estado y su ánima
+#   HORA:<epoch>      -> la hora real (la app la manda al conectarse)
 #   CARA:<glifo>      -> cualquiera de glifos.GLIFOS, "habla" o "reposo" (desfile de glifos)
 #   TXT:<palabras>    -> muestra texto (si no cabe, se desplaza)
+#   OFRENDA:<nombre>  -> barro, agua, luna, chispa, codigo, eco (ver animo.OFRENDAS)
+#   ANIMA             -> responde "AN:tierra,chispa,ánimo" y "ED:días,ofrendas"
 #   BRILLO:<0-255>    -> contraste de la pantalla
 #   INV:<0|1>         -> invierte la pantalla
 #   ESPEJO            -> manda la pantalla actual a la app
 #   LIMPIA            -> pantalla en negro (modo lienzo)
 # Además, si llega una pantalla completa por la característica LIENZO, la muestra.
+#
+# El botón BOOT es la mano: un toque da un poquito de tierra; sostenerlo (abrazo) da más.
 import os
+from math import cos, sin
 import time
 from machine import Pin
 from oled42 import OLED, W, H
-from glifos import GLIFOS, REPOSO, boca
+from glifos import GLIFOS, POR_ANIMO, boca, CX, CY
 from enlace import Enlace
+from animo import Animo, PETRIFICADO, HAMBRIENTO, NOMBRES
 
 _ACENTOS = {"á": "a", "é": "e", "í": "i", "ó": "o", "ú": "u", "ü": "u", "ñ": "n",
             "Á": "A", "É": "E", "Í": "I", "Ó": "O", "Ú": "U", "Ü": "U", "Ñ": "N",
             "¿": "", "¡": ""}
 _COLS, _FILAS = W // 8, H // 8  # 9 x 5 caracteres
-_TURNO = 3500   # ms que dura cada glifo en reposo
-_ESTATICA = 200  # ms de estática entre glifo y glifo
+_TURNO = 3500        # ms que dura cada glifo en reposo
+_TURNO_LENTO = 5500  # cuando tiene hambre todo va más despacio
+_ESTATICA = 200      # ms de estática entre glifo y glifo
+_ABRAZO = 1500       # ms sosteniendo el botón para que cuente como abrazo
+_EFIMERO = 2200      # ms que dura la reacción a una ofrenda
+_BRILLO = 207
+_BRILLO_PIEDRA = 12
+
+# para no regalar ánima por repetir mil veces lo mismo (ms entre una y otra)
+_ESPERA_GRATIS = {"toque": 20_000, "palabras": 30_000, "dibujo": 30_000}
 
 
 def _sin_acentos(s):
@@ -50,33 +65,51 @@ def _envolver(texto):
     return lineas
 
 
+def _centrar(fb, texto, y):
+    fb.text(texto, (W - 8 * len(texto)) // 2, y)
+
+
 class Oracool:
     def __init__(self):
         self.nombre = "Oracool"
         self.oled = OLED()
         self.enlace = Enlace(self.nombre, len(self.oled.buf))
+        self.animo = Animo()
         self.boton = Pin(9, Pin.IN, Pin.PULL_UP)
         self.modo = "cara"        # cara | texto | lienzo
         self.cara = "reposo"
         self._desfile = []
+        self._pozo = None         # de qué ánimo salió el desfile actual
         self._t_turno = time.ticks_ms()
         self.lineas = []
         self.t_texto = 0
         self.invertido = False
+        self.brillo = _BRILLO
         self._boton_antes = 1
+        self._t_presion = 0
         self._destello = 0
         self._espejo_pendiente = False
+        self._efimero = None      # (etiqueta, hasta)
+        self._ultima_gratis = {}
+        self._animo_antes = self.animo.animo()
+        self._t_reporte = time.ticks_ms()
+        self._aplicar_brillo()
 
     # --- comandos -------------------------------------------------------
     def comando(self, linea):
         clave, _, valor = linea.partition(":")
         clave = clave.strip().upper()
+        valor = valor.strip()
         if clave == "HOLA":
             self.enlace.decir("SOY:" + self.nombre)
             self.enlace.decir(self.estado())
+            self._reportar()
             self._espejo_pendiente = True
+        elif clave == "HORA":
+            self.animo.poner_hora(int(valor))
+            self._reportar()
         elif clave == "CARA":
-            nombre = valor.strip().lower()
+            nombre = valor.lower()
             if nombre in GLIFOS or nombre in ("habla", "reposo"):
                 self.modo, self.cara = "cara", nombre
                 self._espejo_pendiente = True
@@ -85,10 +118,16 @@ class Oracool:
             self.lineas = _envolver(valor)
             self.t_texto = time.ticks_ms()
             self._espejo_pendiente = True
+            self._gratis("palabras")
+        elif clave == "OFRENDA":
+            self.ofrendar(valor.lower())
+        elif clave == "ANIMA":
+            self._reportar()
         elif clave == "BRILLO":
-            self.oled.contrast(max(0, min(255, int(valor or 128))))
+            self.brillo = max(0, min(255, int(valor or 128)))
+            self._aplicar_brillo()
         elif clave == "INV":
-            self.invertido = valor.strip() == "1"
+            self.invertido = valor == "1"
             self.oled.invert(self.invertido)
         elif clave == "ESPEJO":
             self._espejo_pendiente = True
@@ -102,17 +141,51 @@ class Oracool:
     def estado(self):
         return "ESTADO:" + (self.cara if self.modo == "cara" else self.modo)
 
+    # --- ánima ----------------------------------------------------------
+    def ofrendar(self, nombre, efimero=True):
+        if not self.animo.ofrendar(nombre):
+            self.enlace.decir("?OFRENDA")
+            return
+        self.enlace.decir("OF:" + nombre)
+        if efimero:
+            self._efimero = (nombre, time.ticks_add(time.ticks_ms(), _EFIMERO))
+        self._reportar()
+
+    def _gratis(self, nombre):
+        """Ánima que llega sola por cómo lo tratas, con un respiro entre una y otra."""
+        ahora = time.ticks_ms()
+        antes = self._ultima_gratis.get(nombre)
+        if antes is None or time.ticks_diff(ahora, antes) >= _ESPERA_GRATIS[nombre]:
+            self._ultima_gratis[nombre] = ahora
+            self.ofrendar(nombre, efimero=False)
+
+    def _reportar(self):
+        self.enlace.poner_anima(self.animo.reporte())
+        self.enlace.decir(self.animo.reporte())
+        self.enlace.decir(self.animo.reporte_edad())
+        self._t_reporte = time.ticks_ms()
+
+    def _aplicar_brillo(self):
+        piedra = self.animo.animo() == PETRIFICADO
+        self.oled.contrast(_BRILLO_PIEDRA if piedra else self.brillo)
+
     # --- dibujo ---------------------------------------------------------
     def _glifo_en_turno(self, t):
-        """Reposo: los glifos desfilan en orden barajado, con estática entre uno y otro."""
-        if not self._desfile or time.ticks_diff(t, self._t_turno) >= _TURNO:
+        """Reposo: desfilan barajados los glifos que van con su ánimo."""
+        animo = self.animo.animo()
+        turno = _TURNO_LENTO if animo == HAMBRIENTO else _TURNO
+        if animo != self._pozo:
+            self._pozo, self._desfile = animo, []
+        if not self._desfile or time.ticks_diff(t, self._t_turno) >= turno:
             if len(self._desfile) <= 1:
-                orden = list(REPOSO)
+                orden = list(POR_ANIMO[animo])
                 for i in range(len(orden) - 1, 0, -1):  # barajar (Fisher-Yates)
                     j = os.urandom(1)[0] % (i + 1)
                     orden[i], orden[j] = orden[j], orden[i]
-                if self._desfile and orden[0] == self._desfile[0]:
+                if self._desfile and len(orden) > 1 and orden[0] == self._desfile[0]:
                     orden.append(orden.pop(0))  # que no se repita al dar la vuelta
+                if animo == HAMBRIENTO:
+                    orden.insert(len(orden) // 2, "pide")  # a media vuelta, pide lo que le falta
                 self._desfile = orden
             else:
                 self._desfile.pop(0)
@@ -126,8 +199,45 @@ class Oracool:
         for i in range(len(buf)):
             buf[i] = a[i] & b[i] if f > 0.5 else a[i] & b[i] & (a[i] >> 1)
 
+    def _pide(self, fb, t):
+        falta = "tierra" if self.animo.tierra < self.animo.chispa else "chispa"
+        if (t // 500) % 2:
+            _centrar(fb, falta + "?", 12)
+        _centrar(fb, "...", 24)
+
+    def _dibujar_ofrenda(self, fb, etiqueta, dt):
+        """Chispas que caen hacia el centro y luego el nombre de la ofrenda."""
+        if dt < 700:
+            k = 1 - dt / 700
+            for i in range(10):
+                a = i * 0.628 + dt / 300
+                r = 4 + 30 * k
+                x = int(CX + r * (1 if i % 2 else -1) * abs(cos(a)))
+                y = int(CY + r * 0.6 * sin(a))
+                fb.fill_rect(x - 1, y - 1, 2, 2, 1)
+            fb.ellipse(CX, CY, int(3 + 3 * (1 - k)), int(3 + 3 * (1 - k)), 1, True)
+        else:
+            fb.ellipse(CX, 8, 3, 3, 1, True)
+            t, c = self.animo.tierra, self.animo.chispa
+            _centrar(fb, etiqueta, 18)
+            # dos barritas: tierra a la izquierda, chispa a la derecha
+            fb.rect(4, 31, 30, 5, 1)
+            fb.fill_rect(5, 32, int(28 * t / 100), 3, 1)
+            fb.rect(38, 31, 30, 5, 1)
+            fb.fill_rect(39, 32, int(28 * c / 100), 3, 1)
+
     def dibujar(self, t):
         fb = self.oled
+        if self._efimero:
+            etiqueta, hasta = self._efimero
+            if time.ticks_diff(hasta, t) > 0:
+                fb.fill(0)
+                self._dibujar_ofrenda(fb, etiqueta, _EFIMERO - time.ticks_diff(hasta, t))
+                return True
+            self._efimero = None
+            if self.modo == "lienzo":
+                fb.buf[:] = self.enlace.lienzo
+                return True
         if self.modo == "lienzo":
             return False  # ya está en pantalla, no hay que redibujar
         fb.fill(0)
@@ -136,8 +246,10 @@ class Oracool:
                 boca(fb, t, hablando=True)
             elif self.cara == "reposo":
                 nombre, dt = self._glifo_en_turno(t)
-                if dt < _ESTATICA:
+                if dt < _ESTATICA and nombre != "piedra":
                     self._estatica(1 - dt / _ESTATICA)
+                elif nombre == "pide":
+                    self._pide(fb, t)
                 else:
                     GLIFOS[nombre](fb, t)
             else:
@@ -156,24 +268,35 @@ class Oracool:
                 fb.text(l, (W - 8 * len(l)) // 2, y0 + 8 * i)
         return True
 
-    # --- ciclo de vida --------------------------------------------------
-    def _al_tocar(self):
+    # --- la mano --------------------------------------------------------
+    def _al_presionar(self):
+        self._t_presion = time.ticks_ms()
+        self._destello = time.ticks_add(self._t_presion, 160)
+        self.oled.invert(not self.invertido)
+
+    def _al_soltar(self):
+        sostenido = time.ticks_diff(time.ticks_ms(), self._t_presion)
+        if sostenido >= _ABRAZO:
+            self.enlace.decir("ABRAZO")
+            self.ofrendar("abrazo")
+            return
         self.enlace.decir("TOQUE")
+        self._gratis("toque")
         if self.modo == "cara" and self.cara == "reposo":
-            self._t_turno = time.ticks_add(time.ticks_ms(), -_TURNO)  # salta al siguiente glifo
+            self._t_turno = time.ticks_add(time.ticks_ms(), -_TURNO_LENTO)  # salta al siguiente glifo
         elif self.modo == "cara" and self.cara == "dormido":
             self.cara = "ojo"
             self.enlace.decir(self.estado())
-        else:
-            self._destello = time.ticks_add(time.ticks_ms(), 160)
-            self.oled.invert(not self.invertido)
 
+    # --- ciclo de vida --------------------------------------------------
     def paso(self):
         e = self.enlace
         if e.cambio_conexion:
             e.cambio_conexion = False
             self.modo = "cara"
             self.cara = "ojo" if e.conectado() else "reposo"
+            if not e.conectado():
+                self.animo.guardar()
         while e.lineas:
             try:
                 self.comando(e.lineas.pop(0))
@@ -184,14 +307,27 @@ class Oracool:
             self.modo = "lienzo"
             self.oled.buf[:] = e.lienzo
             self.oled.show()
+            self._gratis("dibujo")
 
         b = self.boton.value()
         if self._boton_antes == 1 and b == 0:
-            self._al_tocar()
+            self._al_presionar()
+        elif self._boton_antes == 0 and b == 1:
+            self._al_soltar()
         self._boton_antes = b
         if self._destello and time.ticks_diff(time.ticks_ms(), self._destello) >= 0:
             self._destello = 0
             self.oled.invert(self.invertido)
+
+        self.animo.latir()
+        animo = self.animo.animo()
+        if animo != self._animo_antes:
+            self.enlace.decir("ANIMO:" + NOMBRES[animo][:14])
+            self._animo_antes = animo
+            self._aplicar_brillo()
+            self._reportar()
+        elif e.conectado() and time.ticks_diff(time.ticks_ms(), self._t_reporte) > 60_000:
+            self._reportar()
 
         if self.dibujar(time.ticks_ms()):
             self.oled.show()
