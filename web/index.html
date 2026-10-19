@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Oracools</title>
+  <meta name="description" content="Despierta y conversa con tu Oracool, un oráculo telúrico-sintético de bolsillo.">
+  <meta name="theme-color" content="#132b29">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="iconos/icono-192.png">
+  <link rel="apple-touch-icon" href="iconos/apple-touch-icon.png">
+  <link rel="stylesheet" href="estilo.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <header>
+    <h1>Oracools</h1>
+    <p class="lema">Oráculos telúrico-sintéticos</p>
+  </header>
+
+  <main>
+    <section class="altar">
+      <div class="marco">
+        <canvas id="pantalla" width="432" height="240" aria-label="Pantalla del Oracool"></canvas>
+      </div>
+      <p id="estado" class="estado">Dormido. Nadie lo ha despertado.</p>
+      <button id="despertar" class="principal">Despertar al Oracool</button>
+      <p id="sin-bluetooth" class="aviso" hidden>
+        Este navegador no habla Bluetooth. Abre esta página en Chrome (Android o computadora).
+        En iPhone puedes usar la app Bluefy.
+      </p>
+    </section>
+
+    <section>
+      <h2>Rostros</h2>
+      <div class="rejilla" id="rostros">
+        <button data-cara="ojo">Ojo</button>
+        <button data-cara="boca">Boca</button>
+        <button data-cara="habla">Habla</button>
+        <button data-cara="rostro">Rostro</button>
+        <button data-cara="sol">Sol</button>
+        <button data-cara="tercer">Tercer ojo</button>
+        <button data-cara="dormido">Dormido</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>Palabras</h2>
+      <form id="palabras" class="palabras">
+        <textarea id="texto" rows="2" maxlength="180" placeholder="¿De dónde venimos?"></textarea>
+        <button type="submit">Susurrar</button>
+      </form>
+      <p class="nota">Caben 9 letras por renglón y 5 renglones; si es más largo, el texto se desplaza.</p>
+    </section>
+
+    <section>
+      <h2>Lienzo</h2>
+      <p class="nota">Dibuja píxel por píxel directo en la pantalla de arriba.</p>
+      <div class="fila">
+        <button id="dibujar" aria-pressed="false">Dibujar</button>
+        <button id="borrar">Borrar</button>
+        <button id="invertir-lienzo">Invertir</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>Ajustes</h2>
+      <label class="ajuste">Brillo
+        <input id="brillo" type="range" min="1" max="255" value="207">
+      </label>
+      <label class="ajuste interruptor">
+        <input id="invertir" type="checkbox"> Pantalla invertida
+      </label>
+    </section>
+
+    <section>
+      <h2>Bitácora</h2>
+      <ol id="bitacora" class="bitacora"></ol>
+    </section>
+  </main>
+
+  <footer>Julio Sahagún Sánchez · tecnomancia telúrica</footer>
+</body>
+</html>
