@@ -251,3 +251,8 @@ footer {
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
 }
+
+/* pistas que sólo se ven mientras el Oracool duerme */
+.pista { margin: 0 0 12px; }
+body.enlazado .pista { display: none; }
+input:disabled { opacity: .4; cursor: not-allowed; }

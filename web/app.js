@@ -49,6 +49,19 @@ const RELATOS = {
   sol: 'El Oracool irradia.',
   tercer: 'El Oracool abrió el tercer ojo.',
   dormido: 'El Oracool volvió al sueño de la tierra.',
+  reposo: 'El Oracool sueña: sus glifos desfilan.',
+  cuernos: 'El Oracool muestra su silueta de dos puntas.',
+  rombo: 'El Oracool guarda el rombo de la Á.',
+  circuito: 'Chispas recorren los circuitos del Oracool.',
+  espiral: 'El Oracool gira hacia adentro.',
+  luna: 'Sale la luna en el Oracool.',
+  cielo: 'El Oracool mira las estrellas.',
+  gota: 'Algo escurre del Oracool.',
+  ojos: 'El Oracool te mira con dos ojos.',
+  nariz: 'El Oracool respira.',
+  orbe: 'El orbe del Oracool late.',
+  runa: 'El Oracool traza su runa.',
+  onda: 'Ondas salen del centro del Oracool.',
   texto: 'El Oracool sostiene tus palabras.',
   lienzo: 'El Oracool muestra tu dibujo.',
 };
@@ -137,6 +150,7 @@ async function enlazar() {
   await chars.voz.startNotifications();
   await chars.lienzo.startNotifications();
   $('#despertar').textContent = 'Dormir al Oracool';
+  enlazado(true);
   anotar(`Despertaste a ${dispositivo.name}.`);
   await mandar('HOLA');
 }
@@ -149,6 +163,7 @@ async function despertar() {
   }
   try {
     if (!dispositivo) {
+      anotar('Llamando a los Oracools cercanos…');
       dispositivo = await navigator.bluetooth.requestDevice({
         filters: [{ namePrefix: 'Oracool' }],
         optionalServices: [SERVICIO],
@@ -157,13 +172,22 @@ async function despertar() {
     }
     await enlazar();
   } catch (e) {
-    if (e.name === 'NotFoundError') estado('Ningún Oracool respondió al llamado.');
+    if (e.name === 'NotFoundError') {
+      estado('Ningún Oracool respondió al llamado.');
+      anotar('Nadie respondió, o cerraste la ventana. ¿Está encendido el Oracool?');
+    }
     else { estado('No se pudo despertar.'); anotar(e.message); }
   }
 }
 
+function enlazado(si) {
+  document.body.classList.toggle('enlazado', si);
+  document.querySelectorAll('.requiere').forEach((el) => { el.disabled = !si; });
+}
+
 function alDesconectar() {
   chars = null;
+  enlazado(false);
   cola = Promise.resolve();
   marcarCara(null);
   estado(`${dispositivo?.name ?? 'El Oracool'} se durmió.`);
@@ -277,7 +301,8 @@ if (!('bluetooth' in navigator)) {
 }
 $('#despertar').addEventListener('click', despertar);
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', pintar);
+enlazado(false);
 pintar();
-anotar('La app está lista. El Oracool duerme.');
+anotar('La app está lista. Toca «Despertar al Oracool» para empezar.');
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');

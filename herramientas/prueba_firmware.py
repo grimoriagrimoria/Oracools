@@ -1,10 +1,11 @@
 # Se corre EN la placa (mpremote run): dibuja cada glifo y prueba los comandos.
 import time
 from oracool import Oracool, _envolver
+from glifos import GLIFOS
 
 o = Oracool()
 print("nombre:", o.nombre)
-for cara in ("ojo", "boca", "habla", "rostro", "sol", "tercer", "dormido"):
+for cara in list(GLIFOS) + ["habla", "reposo"]:
     o.comando("CARA:" + cara)
     t0 = time.ticks_ms()
     for _ in range(25):
@@ -21,4 +22,13 @@ o.comando("BRILLO:207")
 o.comando("NADA")
 o.comando("CARA:rostro")
 o.paso()
+o.comando("CARA:reposo")
+vistos = set()
+for _ in range(6):
+    o._al_tocar()  # el toque salta al siguiente glifo
+    for _ in range(8):
+        o.paso()
+    vistos.add(o._desfile[0])
+print("en reposo desfilaron:", sorted(vistos))
+assert len(vistos) >= 5
 print("todo bien")

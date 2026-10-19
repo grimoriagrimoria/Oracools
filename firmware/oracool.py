@@ -2,24 +2,26 @@
 #
 # Comandos (texto, uno por línea):
 #   HOLA              -> responde "SOY:<nombre>" y su estado
-#   CARA:<glifo>      -> ojo, boca, habla, rostro, sol, tercer, dormido
+#   CARA:<glifo>      -> cualquiera de glifos.GLIFOS, "habla" o "reposo" (desfile de glifos)
 #   TXT:<palabras>    -> muestra texto (si no cabe, se desplaza)
 #   BRILLO:<0-255>    -> contraste de la pantalla
 #   INV:<0|1>         -> invierte la pantalla
 #   ESPEJO            -> manda la pantalla actual a la app
 #   LIMPIA            -> pantalla en negro (modo lienzo)
 # Además, si llega una pantalla completa por la característica LIENZO, la muestra.
+import os
 import time
-import machine
 from machine import Pin
 from oled42 import OLED, W, H
-from glifos import GLIFOS, boca
+from glifos import GLIFOS, REPOSO, boca
 from enlace import Enlace
 
 _ACENTOS = {"á": "a", "é": "e", "í": "i", "ó": "o", "ú": "u", "ü": "u", "ñ": "n",
             "Á": "A", "É": "E", "Í": "I", "Ó": "O", "Ú": "U", "Ü": "U", "Ñ": "N",
             "¿": "", "¡": ""}
 _COLS, _FILAS = W // 8, H // 8  # 9 x 5 caracteres
+_TURNO = 3500   # ms que dura cada glifo en reposo
+_ESTATICA = 200  # ms de estática entre glifo y glifo
 
 
 def _sin_acentos(s):
@@ -50,13 +52,14 @@ def _envolver(texto):
 
 class Oracool:
     def __init__(self):
-        uid = machine.unique_id()
-        self.nombre = "Oracool-%02X%02X" % (uid[-2], uid[-1])
+        self.nombre = "Oracool"
         self.oled = OLED()
         self.enlace = Enlace(self.nombre, len(self.oled.buf))
         self.boton = Pin(9, Pin.IN, Pin.PULL_UP)
         self.modo = "cara"        # cara | texto | lienzo
-        self.cara = "dormido"
+        self.cara = "reposo"
+        self._desfile = []
+        self._t_turno = time.ticks_ms()
         self.lineas = []
         self.t_texto = 0
         self.invertido = False
@@ -74,7 +77,7 @@ class Oracool:
             self._espejo_pendiente = True
         elif clave == "CARA":
             nombre = valor.strip().lower()
-            if nombre in GLIFOS or nombre == "habla":
+            if nombre in GLIFOS or nombre in ("habla", "reposo"):
                 self.modo, self.cara = "cara", nombre
                 self._espejo_pendiente = True
         elif clave == "TXT":
@@ -100,6 +103,29 @@ class Oracool:
         return "ESTADO:" + (self.cara if self.modo == "cara" else self.modo)
 
     # --- dibujo ---------------------------------------------------------
+    def _glifo_en_turno(self, t):
+        """Reposo: los glifos desfilan en orden barajado, con estática entre uno y otro."""
+        if not self._desfile or time.ticks_diff(t, self._t_turno) >= _TURNO:
+            if len(self._desfile) <= 1:
+                orden = list(REPOSO)
+                for i in range(len(orden) - 1, 0, -1):  # barajar (Fisher-Yates)
+                    j = os.urandom(1)[0] % (i + 1)
+                    orden[i], orden[j] = orden[j], orden[i]
+                if self._desfile and orden[0] == self._desfile[0]:
+                    orden.append(orden.pop(0))  # que no se repita al dar la vuelta
+                self._desfile = orden
+            else:
+                self._desfile.pop(0)
+            self._t_turno = t
+        return self._desfile[0], time.ticks_diff(t, self._t_turno)
+
+    def _estatica(self, f):
+        """Llena la pantalla de ruido que se va apagando (f: 1 -> 0)."""
+        buf = self.oled.buf
+        a, b = os.urandom(len(buf)), os.urandom(len(buf))
+        for i in range(len(buf)):
+            buf[i] = a[i] & b[i] if f > 0.5 else a[i] & b[i] & (a[i] >> 1)
+
     def dibujar(self, t):
         fb = self.oled
         if self.modo == "lienzo":
@@ -108,6 +134,12 @@ class Oracool:
         if self.modo == "cara":
             if self.cara == "habla":
                 boca(fb, t, hablando=True)
+            elif self.cara == "reposo":
+                nombre, dt = self._glifo_en_turno(t)
+                if dt < _ESTATICA:
+                    self._estatica(1 - dt / _ESTATICA)
+                else:
+                    GLIFOS[nombre](fb, t)
             else:
                 GLIFOS[self.cara](fb, t)
         else:
@@ -127,7 +159,9 @@ class Oracool:
     # --- ciclo de vida --------------------------------------------------
     def _al_tocar(self):
         self.enlace.decir("TOQUE")
-        if self.modo == "cara" and self.cara == "dormido":
+        if self.modo == "cara" and self.cara == "reposo":
+            self._t_turno = time.ticks_add(time.ticks_ms(), -_TURNO)  # salta al siguiente glifo
+        elif self.modo == "cara" and self.cara == "dormido":
             self.cara = "ojo"
             self.enlace.decir(self.estado())
         else:
@@ -139,7 +173,7 @@ class Oracool:
         if e.cambio_conexion:
             e.cambio_conexion = False
             self.modo = "cara"
-            self.cara = "ojo" if e.conectado() else "dormido"
+            self.cara = "ojo" if e.conectado() else "reposo"
         while e.lineas:
             try:
                 self.comando(e.lineas.pop(0))

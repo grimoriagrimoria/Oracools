@@ -32,15 +32,29 @@
     </section>
 
     <section>
-      <h2>Rostros</h2>
+      <h2>Glifos</h2>
+      <p class="nota pista">Despierta al Oracool para usar estos controles.</p>
       <div class="rejilla" id="rostros">
-        <button data-cara="ojo">Ojo</button>
-        <button data-cara="boca">Boca</button>
-        <button data-cara="habla">Habla</button>
-        <button data-cara="rostro">Rostro</button>
-        <button data-cara="sol">Sol</button>
-        <button data-cara="tercer">Tercer ojo</button>
-        <button data-cara="dormido">Dormido</button>
+        <button class="requiere" data-cara="reposo">✦ Reposo</button>
+        <button class="requiere" data-cara="ojo">Ojo</button>
+        <button class="requiere" data-cara="ojos">Dos ojos</button>
+        <button class="requiere" data-cara="tercer">Tercer ojo</button>
+        <button class="requiere" data-cara="boca">Boca</button>
+        <button class="requiere" data-cara="habla">Habla</button>
+        <button class="requiere" data-cara="nariz">Nariz</button>
+        <button class="requiere" data-cara="rostro">Rostro</button>
+        <button class="requiere" data-cara="cuernos">Cuernos</button>
+        <button class="requiere" data-cara="sol">Sol</button>
+        <button class="requiere" data-cara="luna">Luna</button>
+        <button class="requiere" data-cara="cielo">Cielo</button>
+        <button class="requiere" data-cara="orbe">Orbe</button>
+        <button class="requiere" data-cara="runa">Runa</button>
+        <button class="requiere" data-cara="rombo">Rombo</button>
+        <button class="requiere" data-cara="circuito">Circuito</button>
+        <button class="requiere" data-cara="espiral">Espiral</button>
+        <button class="requiere" data-cara="gota">Gota</button>
+        <button class="requiere" data-cara="onda">Onda</button>
+        <button class="requiere" data-cara="dormido">Dormido</button>
       </div>
     </section>
 
@@ -48,7 +62,7 @@
       <h2>Palabras</h2>
       <form id="palabras" class="palabras">
         <textarea id="texto" rows="2" maxlength="180" placeholder="¿De dónde venimos?"></textarea>
-        <button type="submit">Susurrar</button>
+        <button class="requiere" type="submit">Susurrar</button>
       </form>
       <p class="nota">Caben 9 letras por renglón y 5 renglones; si es más largo, el texto se desplaza.</p>
     </section>
@@ -65,11 +79,12 @@
 
     <section>
       <h2>Ajustes</h2>
+      <p class="nota pista">Despierta al Oracool para usar estos controles.</p>
       <label class="ajuste">Brillo
-        <input id="brillo" type="range" min="1" max="255" value="207">
+        <input class="requiere" id="brillo" type="range" min="1" max="255" value="207">
       </label>
       <label class="ajuste interruptor">
-        <input id="invertir" type="checkbox"> Pantalla invertida
+        <input class="requiere" id="invertir" type="checkbox"> Pantalla invertida
       </label>
     </section>
 

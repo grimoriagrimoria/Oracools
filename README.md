@@ -41,7 +41,7 @@ computadora; en iPhone, la app Bluefy). Fuera de localhost tiene que ser HTTPS.
 
 ## Protocolo Bluetooth
 
-Servicio `4f524143-4f4f-4c53-8000-000000000001` ("ORACOOLS"), anuncia como `Oracool-XXXX`.
+Servicio `4f524143-4f4f-4c53-8000-000000000001` ("ORACOOLS"), anuncia como `Oracool`.
 
 | Característica | UUID termina en | Dirección | Contenido |
 |---|---|---|---|
@@ -49,7 +49,7 @@ Servicio `4f524143-4f4f-4c53-8000-000000000001` ("ORACOOLS"), anuncia como `Orac
 | VOZ | `…0003` | Oracool → app | eventos: `SOY:<nombre>`, `ESTADO:<cara>`, `TOQUE`, `?<desconocido>`, `ERR:…` |
 | LIENZO | `…0004` | ambas | pantalla cruda MONO_VLSB de 360 bytes en 20 bloques: 2 bytes de posición (LE) + 18 de píxeles |
 
-Comandos: `HOLA`, `CARA:<ojo|boca|habla|rostro|sol|tercer|dormido>`, `TXT:<texto>`
+Comandos: `HOLA`, `CARA:<glifo>` (ojo, ojos, tercer, boca, habla, nariz, rostro, cuernos, sol, luna, cielo, orbe, runa, rombo, circuito, espiral, gota, onda, dormido, o `reposo` = desfile), `TXT:<texto>`
 (`|` = salto de renglón), `BRILLO:<0-255>`, `INV:<0|1>`, `ESPEJO`, `LIMPIA`.
 
 Cada vez que cambia lo que se ve, el Oracool manda su pantalla por LIENZO (el "espejo"),
