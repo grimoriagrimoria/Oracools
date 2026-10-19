@@ -1,3 +1,6 @@
 respaldos/
 __pycache__/
 *.pyc
+
+# Gotham es tipografía comercial: se sube al servidor pero no al repo público
+web/fuentes/gotham/

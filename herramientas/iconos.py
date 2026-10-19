@@ -8,8 +8,8 @@ from pathlib import Path
 
 AQUI = Path(__file__).parent
 SALIDA = AQUI.parent / "web" / "iconos"
-FONDO = (0x13, 0x2b, 0x29)   # verde muy oscuro, como el OLED apagado
-PIXEL = (0xb5, 0xec, 0x9a)   # verde menta del filamento
+FONDO = (0x08, 0x0a, 0x12)   # noche de Oráculos
+PIXEL = (0xe3, 0xb0, 0x63)   # oro de Oráculos
 
 
 def png(ancho, alto, filas):

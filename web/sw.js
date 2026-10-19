@@ -1,9 +1,11 @@
 // Guarda la app para que abra aunque no haya internet (el Bluetooth no lo necesita).
 // Sube la versión cada vez que publiques cambios.
-const VERSION = 'oracools-v1';
+const VERSION = 'oracools-v2';
 const ARCHIVOS = [
   './', 'index.html', 'estilo.css', 'app.js', 'manifest.webmanifest',
   'iconos/icono-192.png', 'iconos/icono-512.png', 'iconos/apple-touch-icon.png',
+  'marca/oraculos-logotipo.png', 'fuentes/ChakraPetch-Regular.ttf', 'fuentes/ChakraPetch-Medium.ttf',
+  'fuentes/ChakraPetch-SemiBold.ttf',
 ];
 
 self.addEventListener('install', (e) => {
