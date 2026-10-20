@@ -381,3 +381,19 @@ button.ofrecida { animation: ofrecer .7s var(--ease); }
 @keyframes ofrecer { 30% { transform: scale(1.06); box-shadow: 0 0 22px -2px var(--glow); color: var(--gold-bright); } }
 
 body.petrificado #animo-nombre { color: var(--text-faint); text-shadow: none; }
+
+/* Aleatorio encendido: respira despacito y sus estrellas giran */
+.rejilla .aleatorio.activo {
+  color: var(--gold-bright);
+  border-color: var(--gold);
+  background:
+    linear-gradient(90deg, transparent, rgba(227, 176, 99, .22), transparent) 0 0 / 200% 100%,
+    linear-gradient(90deg, rgba(227, 176, 99, .16), rgba(227, 176, 99, .05));
+  animation: brillo-azar 2.6s linear infinite, latir-azar 2.6s ease-in-out infinite;
+}
+@keyframes latir-azar {
+  50% { box-shadow: 0 0 0 3px rgba(227, 176, 99, .1), 0 0 26px -4px var(--glow); }
+}
+.aleatorio .astro { display: inline-block; }
+.aleatorio.activo .astro { animation: girar-astro 3.2s linear infinite; }
+@keyframes girar-astro { to { transform: rotate(360deg); } }

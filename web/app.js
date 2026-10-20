@@ -10,7 +10,7 @@ const W = 72, H = 40, TAM = W * H / 8;   // 360 bytes, formato MONO_VLSB
 const BLOQUE = 18;                        // píxeles por bloque BLE (+2 de posición)
 const ESCALA = 6;                         // 72x40 -> 432x240 en el canvas
 
-import { polvo, espera } from './efectos.js?v=6';
+import { polvo, espera } from './efectos.js?v=7';
 
 const $ = (s) => document.querySelector(s);
 const pantalla = $('#pantalla');
@@ -178,6 +178,8 @@ function alOirVoz(e) {
     if (OFRENDAS[valor]) anotar(OFRENDAS[valor]);
   } else if (clave === 'ANIMO' || clave === 'TOQUE' || clave === 'ABRAZO') {
     // ANIMO llega junto con AN; TOQUE y ABRAZO llegan junto con OF
+  } else if (msg === '?VIVO') {
+    // firmware anterior al espejo en vivo: no pasa nada, sólo no se anima en la app
   } else if (clave === 'ERR') {
     anotar('El Oracool se confundió: ' + valor);
   } else {
@@ -188,8 +190,10 @@ function alOirVoz(e) {
 function alVerLienzo(e) {
   const v = new Uint8Array(e.target.value.buffer);
   const pos = v[0] | (v[1] << 8);
-  espejo.set(v.subarray(2, 2 + Math.min(BLOQUE, TAM - pos)), pos);
-  if (pos + BLOQUE >= TAM && !dibujando) {
+  const n = Math.min(v.length - 2, TAM - pos);  // el Oracool manda bloques del tamaño que permita el enlace
+  if (n <= 0) return;
+  espejo.set(v.subarray(2, 2 + n), pos);
+  if (pos + n >= TAM && !dibujando) {
     buf = espejo.slice();
     pintar();
   }
@@ -213,6 +217,7 @@ async function enlazar() {
   anotar(`Despertaste a ${dispositivo.name}.`);
   await mandar('HORA:' + Math.floor(Date.now() / 1000));
   await mandar('HOLA');
+  await mandar('VIVO:' + (document.hidden ? 0 : 1));
 }
 
 const latido = espera($('#espera'));
@@ -384,6 +389,9 @@ document.querySelectorAll('details.panel').forEach((d) => {
   try { const v = localStorage.getItem(clave); if (v !== null) d.open = v === '1'; } catch {}
   d.addEventListener('toggle', () => { try { localStorage.setItem(clave, d.open ? '1' : '0'); } catch {} });
 });
+
+// el espejo en vivo sólo mientras ves la app (ahorra batería y Bluetooth)
+document.addEventListener('visibilitychange', () => mandar('VIVO:' + (document.hidden ? 0 : 1)));
 
 polvo($('#polvo'));
 enlazado(false);

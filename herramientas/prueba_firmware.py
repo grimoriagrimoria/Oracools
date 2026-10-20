@@ -25,7 +25,8 @@ o.paso()
 o.comando("CARA:reposo")
 vistos = set()
 for _ in range(6):
-    o._al_tocar()  # el toque salta al siguiente glifo
+    o._al_presionar(); o._al_soltar()  # el toque salta al siguiente glifo
+    o._efimero = None  # (el primer toque además hace su ritual; aquí sólo probamos el salto)
     for _ in range(8):
         o.paso()
     vistos.add(o._desfile[0])

@@ -14,7 +14,7 @@ desde el celular por Bluetooth.
 |---|---|
 | `firmware/` | MicroPython para el ESP32-C3: pantalla, glifos, Bluetooth y estados |
 | `web/` | La webapp (PWA, sin frameworks) que se publica en cools.oraculos.app |
-| `herramientas/` | Pruebas y utilidades que corren desde la PC |
+| `herramientas/` | Pruebas y utilidades (algunas corren en la placa con `mpremote run`) |
 | `respaldos/` | Firmware original de la placa (no va al repo) |
 
 ## Hardware
@@ -69,6 +69,8 @@ app.js y sw.js (y la VERSION de sw.js) para que ningún navegador se quede con l
 
 ```bash
 python -m mpremote connect COM3 run herramientas/prueba_firmware.py
+python -m mpremote connect COM3 run herramientas/prueba_animo.py
+python -m mpremote connect COM3 run herramientas/prueba_ofrendas.py
 python herramientas/prueba_ble.py
 ```
 

@@ -4,8 +4,9 @@
 #   ...0002  ESCUCHA  (escritura)   comandos de texto terminados en "\n"
 #   ...0003  VOZ      (notificación) eventos del Oracool: "TOQUE", "ESTADO:..."
 #   ...0004  LIENZO   (escritura + notificación) pantalla cruda de 72x40,
-#            en bloques de 20 bytes: 2 bytes de posición (LE) + 18 bytes de píxeles.
-#            360 bytes = 20 bloques exactos.
+#            en bloques: 2 bytes de posición (LE) + píxeles. La app escribe bloques de 18
+#            píxeles (20 bytes); el Oracool manda bloques tan grandes como permita el MTU
+#            (con el teléfono, la pantalla entera cabe en 2).
 #   ...0005  ANIMA    (lectura)     "AN:tierra,chispa,ánimo" para leerlo sin suscribirse
 import bluetooth
 from micropython import const
@@ -13,6 +14,8 @@ from micropython import const
 _IRQ_CONECTA = const(1)
 _IRQ_DESCONECTA = const(2)
 _IRQ_ESCRITURA = const(3)
+_IRQ_MTU = const(21)
+_MTU_DESEADO = 247
 
 _F_ESCRIBE = bluetooth.FLAG_WRITE | bluetooth.FLAG_WRITE_NO_RESPONSE
 _F_NOTIFICA = bluetooth.FLAG_READ | bluetooth.FLAG_NOTIFY
@@ -37,10 +40,15 @@ class Enlace:
         self.cambio_conexion = False
         self._parcial = b""
         self._crudo = b""
+        self.mtu = 23
 
         self._ble = bluetooth.BLE()
         self._ble.active(True)
         self._ble.config(gap_name=nombre)
+        try:
+            self._ble.config(mtu=_MTU_DESEADO)  # paquetes grandes si el otro lado puede
+        except (ValueError, OSError):
+            pass
         self._ble.irq(self._irq)
         ((self._h_escucha, self._h_voz, self._h_lienzo, self._h_anima),) = self._ble.gatts_register_services(
             ((SERVICIO, (_ESCUCHA, _VOZ, _LIENZO, _ANIMA)),)
@@ -63,9 +71,12 @@ class Enlace:
         elif evento == _IRQ_DESCONECTA:
             self.conexion = None
             self.cambio_conexion = True
+            self.mtu = 23
             self._parcial = b""
             self._crudo = b""
             self._anunciar()
+        elif evento == _IRQ_MTU:
+            self.mtu = datos[1]
         elif evento == _IRQ_ESCRITURA:
             h = datos[1]
             if h == self._h_escucha:
@@ -107,8 +118,9 @@ class Enlace:
         if self.conexion is None:
             return
         import time
-        for pos in range(0, len(buf), BLOQUE):
-            bloque = bytes((pos & 0xFF, pos >> 8)) + buf[pos:pos + BLOQUE]
+        paso = max(BLOQUE, min(len(buf), self.mtu - 5))  # 3 de ATT + 2 de posición
+        for pos in range(0, len(buf), paso):
+            bloque = bytes((pos & 0xFF, pos >> 8)) + buf[pos:pos + paso]
             for _ in range(3):
                 try:
                     self._ble.gatts_notify(self.conexion, self._h_lienzo, bloque)

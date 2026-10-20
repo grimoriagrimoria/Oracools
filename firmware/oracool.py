@@ -10,18 +10,19 @@
 #   BRILLO:<0-255>    -> contraste de la pantalla
 #   INV:<0|1>         -> invierte la pantalla
 #   ESPEJO            -> manda la pantalla actual a la app
+#   VIVO:<0|1>        -> espejo en vivo: manda la pantalla cada que cambia (unas 6 veces/s)
 #   LIMPIA            -> pantalla en negro (modo lienzo)
 # Además, si llega una pantalla completa por la característica LIENZO, la muestra.
 #
 # El botón BOOT es la mano: un toque da un poquito de tierra; sostenerlo (abrazo) da más.
 import os
-from math import cos, sin
 import time
 from machine import Pin
 from oled42 import OLED, W, H
 from glifos import GLIFOS, POR_ANIMO, boca, CX, CY
 from enlace import Enlace
 from animo import Animo, PETRIFICADO, HAMBRIENTO, NOMBRES
+from ofrendas import ANIMACIONES, DURACION
 
 _ACENTOS = {"á": "a", "é": "e", "í": "i", "ó": "o", "ú": "u", "ü": "u", "ñ": "n",
             "Á": "A", "É": "E", "Í": "I", "Ó": "O", "Ú": "U", "Ü": "U", "Ñ": "N",
@@ -31,7 +32,7 @@ _TURNO = 3500        # ms que dura cada glifo en reposo
 _TURNO_LENTO = 5500  # cuando tiene hambre todo va más despacio
 _ESTATICA = 200      # ms de estática entre glifo y glifo
 _ABRAZO = 1500       # ms sosteniendo el botón para que cuente como abrazo
-_EFIMERO = 2200      # ms que dura la reacción a una ofrenda
+_EFIMERO = DURACION + 1000  # ms que dura la reacción a una ofrenda: su ritual y luego su nombre
 _BRILLO = 207
 _BRILLO_PIEDRA = 12
 
@@ -89,6 +90,9 @@ class Oracool:
         self._t_presion = 0
         self._destello = 0
         self._espejo_pendiente = False
+        self.vivo = False
+        self._t_espejo = time.ticks_ms()
+        self._ultimo_espejo = bytes(len(self.oled.buf))
         self._efimero = None      # (etiqueta, hasta)
         self._ultima_gratis = {}
         self._animo_antes = self.animo.animo()
@@ -131,6 +135,9 @@ class Oracool:
             self.oled.invert(self.invertido)
         elif clave == "ESPEJO":
             self._espejo_pendiente = True
+        elif clave == "VIVO":
+            self.vivo = valor == "1"
+            self._espejo_pendiente = True
         elif clave == "LIMPIA":
             self.modo = "lienzo"
             self.oled.fill(0)
@@ -157,7 +164,7 @@ class Oracool:
         antes = self._ultima_gratis.get(nombre)
         if antes is None or time.ticks_diff(ahora, antes) >= _ESPERA_GRATIS[nombre]:
             self._ultima_gratis[nombre] = ahora
-            self.ofrendar(nombre, efimero=False)
+            self.ofrendar(nombre, efimero=nombre == "toque")
 
     def _reportar(self):
         self.enlace.poner_anima(self.animo.reporte())
@@ -206,25 +213,18 @@ class Oracool:
         _centrar(fb, "...", 24)
 
     def _dibujar_ofrenda(self, fb, etiqueta, dt):
-        """Chispas que caen hacia el centro y luego el nombre de la ofrenda."""
-        if dt < 700:
-            k = 1 - dt / 700
-            for i in range(10):
-                a = i * 0.628 + dt / 300
-                r = 4 + 30 * k
-                x = int(CX + r * (1 if i % 2 else -1) * abs(cos(a)))
-                y = int(CY + r * 0.6 * sin(a))
-                fb.fill_rect(x - 1, y - 1, 2, 2, 1)
-            fb.ellipse(CX, CY, int(3 + 3 * (1 - k)), int(3 + 3 * (1 - k)), 1, True)
-        else:
-            fb.ellipse(CX, 8, 3, 3, 1, True)
-            t, c = self.animo.tierra, self.animo.chispa
-            _centrar(fb, etiqueta, 18)
-            # dos barritas: tierra a la izquierda, chispa a la derecha
-            fb.rect(4, 31, 30, 5, 1)
-            fb.fill_rect(5, 32, int(28 * t / 100), 3, 1)
-            fb.rect(38, 31, 30, 5, 1)
-            fb.fill_rect(39, 32, int(28 * c / 100), 3, 1)
+        """Primero el ritual propio de cada ofrenda (ofrendas.py), luego su nombre y las barritas."""
+        if etiqueta in ANIMACIONES and dt < DURACION:
+            ANIMACIONES[etiqueta](fb, dt)
+            return
+        fb.ellipse(CX, 8, 3, 3, 1, True)
+        t, c = self.animo.tierra, self.animo.chispa
+        _centrar(fb, etiqueta, 18)
+        # dos barritas: tierra a la izquierda, chispa a la derecha
+        fb.rect(4, 31, 30, 5, 1)
+        fb.fill_rect(5, 32, int(28 * t / 100), 3, 1)
+        fb.rect(38, 31, 30, 5, 1)
+        fb.fill_rect(39, 32, int(28 * c / 100), 3, 1)
 
     def dibujar(self, t):
         fb = self.oled
@@ -296,6 +296,7 @@ class Oracool:
             self.modo = "cara"
             self.cara = "ojo" if e.conectado() else "reposo"
             if not e.conectado():
+                self.vivo = False
                 self.animo.guardar()
         while e.lineas:
             try:
@@ -331,8 +332,14 @@ class Oracool:
 
         if self.dibujar(time.ticks_ms()):
             self.oled.show()
-        if self._espejo_pendiente:
+        ahora = time.ticks_ms()
+        cada = 160 if e.mtu >= 100 else 500  # con paquetes chiquitos, menos seguido
+        en_vivo = (self.vivo and time.ticks_diff(ahora, self._t_espejo) >= cada
+                   and self.oled.buf != self._ultimo_espejo)
+        if self._espejo_pendiente or en_vivo:
             self._espejo_pendiente = False
+            self._t_espejo = ahora
+            self._ultimo_espejo = bytes(self.oled.buf)
             e.espejo(self.oled.buf)
 
     def vivir(self):
