@@ -58,8 +58,7 @@ así la app muestra exactamente lo mismo.
 ## Publicar
 
 ```bash
-bash herramientas/publicar.sh oracools   # https://oraculos.app/oracools/
-bash herramientas/publicar.sh            # https://cools.oraculos.app
+bash herramientas/publicar.sh   # https://cools.oraculos.app
 ```
 
 Cada vez que cambies estilo.css, app.js o efectos.js, sube el `?v=` en index.html,

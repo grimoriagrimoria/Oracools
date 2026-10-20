@@ -1,19 +1,15 @@
 #!/usr/bin/env bash
-# Publica web/ en el hosting de Namecheap (cuenta rociqtec).
+# Publica web/ en https://cools.oraculos.app (hosting Namecheap, cuenta rociqtec).
 #
-# Uso:  bash herramientas/publicar.sh            -> https://cools.oraculos.app
-#       bash herramientas/publicar.sh oracools   -> https://oraculos.app/oracools/
+# Uso:  bash herramientas/publicar.sh
 #       ORACOOLS_LLAVE=~/.ssh/otra_llave bash herramientas/publicar.sh
 set -euo pipefail
 
 HOST=business149-5.web-hosting.com
 PUERTO=21098
 USUARIO=rociqtec
-case "${1:-cools}" in
-  cools)    DESTINO=/home/rociqtec/public_html/cools.oraculos.app; URL=https://cools.oraculos.app ;;
-  oracools) DESTINO=/home/rociqtec/public_html/oraculos.app/oracools; URL=https://oraculos.app/oracools/ ;;
-  *) echo "destino desconocido: $1 (usa cools u oracools)"; exit 1 ;;
-esac
+DESTINO=/home/rociqtec/public_html/cools.oraculos.app
+URL=https://cools.oraculos.app
 LLAVE=${ORACOOLS_LLAVE:-~/.ssh/oraculos_deploy}
 
 cd "$(dirname "$0")/../web"
